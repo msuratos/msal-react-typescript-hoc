@@ -1,25 +1,34 @@
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Switch, Route, Link
-} from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { connect } from "react-redux";
 
 import logo from '../logo.svg';
 import './App.css';
 
+import { username } from '../redux/authSlice';
 import { WithAzureAdProps, withAzureAd } from '../utils/authProvider';
 import SecuredComponent from './SecuredComponent/SecuredComponent'
 
-class App extends React.Component<WithAzureAdProps> {
+interface AppProps extends WithAzureAdProps {
+  username: Function
+}
+
+class App extends React.Component<AppProps> {
   state = {
     isAuthenticated: false
   }
 
   async componentDidMount() {
-    const response = await this.props.signin;
+    try {
+      const response = await this.props.signin();
+      this.props.username(response.account.username);
 
-    if (response)
-      this.setState({ isAuthenticated: true });
+      if (response)
+        this.setState({ isAuthenticated: true });
+    }
+    catch (error) {
+      console.log('Error from App sigin', error);
+    }
   }
 
   render() {
@@ -44,7 +53,7 @@ class App extends React.Component<WithAzureAdProps> {
                   </div>
                 </Route>
                 <Route path="/securecomponent" exact>
-                  <SecuredComponent {...props} />
+                  <SecuredComponent {...props as WithAzureAdProps} />
                 </Route>
               </Switch>
             </Router>
@@ -54,4 +63,8 @@ class App extends React.Component<WithAzureAdProps> {
   }
 }
 
-export default withAzureAd(App);
+const mapDispatchToProps = {
+  username
+};
+
+export default connect(null, mapDispatchToProps)(withAzureAd(App));
